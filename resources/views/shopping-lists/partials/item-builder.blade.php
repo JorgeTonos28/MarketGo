@@ -3,31 +3,9 @@
 <section
     class="bg-white rounded-xl shadow-sm border border-slate-100 p-6"
     data-list-builder
-    data-products='@json($products->map(function ($product) {
-        return [
-            "id" => $product->id,
-            "name" => $product->name,
-            "unit" => $product->unit,
-            "brand" => $product->brand,
-            "category_id" => $product->product_category_id,
-        ];
-    }))'
-    data-supermarkets='@json($supermarkets->map(function ($market) {
-        return [
-            "id" => $market->id,
-            "name" => $market->name,
-        ];
-    }))'
-    data-sections='@json($supermarkets->flatMap(function ($market) {
-        return $market->sections->map(function ($section) {
-            return [
-                "id" => $section->id,
-                "name" => $section->name,
-                "position" => $section->position,
-                "supermarket_id" => $section->supermarket_id,
-            ];
-        });
-    }))'
+    data-products='@json($productDataset ?? [])'
+    data-supermarkets='@json($supermarketDataset ?? [])'
+    data-sections='@json($sectionDataset ?? [])'
 >
     <h2 class="text-lg font-semibold text-slate-800 mb-4">Selecciona tus productos</h2>
 

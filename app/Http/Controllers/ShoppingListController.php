@@ -40,10 +40,41 @@ class ShoppingListController extends Controller
         $products = Product::with('category')->orderBy('name')->get();
         $categories = ProductCategory::orderBy('name')->get();
 
+        $productDataset = $products->map(function ($product) {
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'unit' => $product->unit,
+                'brand' => $product->brand,
+                'category_id' => $product->product_category_id,
+            ];
+        })->values();
+
+        $supermarketDataset = $supermarkets->map(function ($market) {
+            return [
+                'id' => $market->id,
+                'name' => $market->name,
+            ];
+        })->values();
+
+        $sectionDataset = $supermarkets->flatMap(function ($market) {
+            return $market->sections->map(function ($section) {
+                return [
+                    'id' => $section->id,
+                    'name' => $section->name,
+                    'position' => $section->position,
+                    'supermarket_id' => $section->supermarket_id,
+                ];
+            });
+        })->values();
+
         return view('shopping-lists.create', [
             'supermarkets' => $supermarkets,
             'products' => $products,
             'categories' => $categories,
+            'productDataset' => $productDataset,
+            'supermarketDataset' => $supermarketDataset,
+            'sectionDataset' => $sectionDataset,
         ]);
     }
 
@@ -278,6 +309,34 @@ class ShoppingListController extends Controller
         $products = Product::with('category')->orderBy('name')->get();
         $categories = ProductCategory::orderBy('name')->get();
 
+        $productDataset = $products->map(function ($product) {
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'unit' => $product->unit,
+                'brand' => $product->brand,
+                'category_id' => $product->product_category_id,
+            ];
+        })->values();
+
+        $supermarketDataset = $supermarkets->map(function ($market) {
+            return [
+                'id' => $market->id,
+                'name' => $market->name,
+            ];
+        })->values();
+
+        $sectionDataset = $supermarkets->flatMap(function ($market) {
+            return $market->sections->map(function ($section) {
+                return [
+                    'id' => $section->id,
+                    'name' => $section->name,
+                    'position' => $section->position,
+                    'supermarket_id' => $section->supermarket_id,
+                ];
+            });
+        })->values();
+
         return view('shopping-lists.show', [
             'shoppingList' => $shoppingList,
             'pendingGroups' => $pendingGroups,
@@ -285,6 +344,9 @@ class ShoppingListController extends Controller
             'supermarkets' => $supermarkets,
             'products' => $products,
             'categories' => $categories,
+            'productDataset' => $productDataset,
+            'supermarketDataset' => $supermarketDataset,
+            'sectionDataset' => $sectionDataset,
         ]);
     }
 

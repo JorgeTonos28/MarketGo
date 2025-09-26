@@ -61,6 +61,9 @@
                 'supermarkets' => $supermarkets,
                 'products' => $products,
                 'categories' => $categories,
+                'productDataset' => $productDataset,
+                'supermarketDataset' => $supermarketDataset,
+                'sectionDataset' => $sectionDataset,
             ])
 
             <div class="flex justify-end">
