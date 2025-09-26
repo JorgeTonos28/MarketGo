@@ -27,7 +27,7 @@
                         @if($market->sections->isNotEmpty())
                             <div class="mt-3 flex flex-wrap gap-2">
                                 @foreach($market->sections as $section)
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full bg-slate-100 text-xs text-slate-600">{{ $section->name }}</span>
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full bg-slate-100 text-xs text-slate-600">Pasillo {{ $section->position }} · {{ $section->name }}</span>
                                 @endforeach
                             </div>
                         @endif
@@ -73,11 +73,25 @@
                     <label class="block text-sm font-medium text-slate-600 mb-1" for="postal_code">Código postal</label>
                     <input type="text" id="postal_code" name="postal_code" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-600 mb-1" for="sections">Pasillos (uno por línea)</label>
-                    <textarea id="sections" name="sections" rows="4" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Frutas y verduras
-Despensa
-Herramientas"></textarea>
+                <div data-section-builder data-sections='@json(old('sections', []))' class="space-y-4">
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">Número de pasillo</label>
+                            <input type="number" min="0" data-section-number class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="1">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">¿Qué hay en el pasillo?</label>
+                            <input type="text" data-section-name class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Frutas y verduras">
+                        </div>
+                        <div class="sm:col-span-2 flex justify-end">
+                            <button type="button" data-add-section class="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg shadow hover:bg-slate-700">Agregar pasillo</button>
+                        </div>
+                    </div>
+                    @if($errors->has('sections') || $errors->has('sections.*.number') || $errors->has('sections.*.name'))
+                        <p class="text-sm text-rose-600">Revisa los pasillos agregados, cada uno necesita número y descripción.</p>
+                    @endif
+                    <div data-section-list class="space-y-2"></div>
+                    <div data-section-hidden></div>
                 </div>
                 <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow hover:bg-indigo-500">Guardar establecimiento</button>
             </form>

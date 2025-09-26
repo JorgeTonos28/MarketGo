@@ -10,7 +10,7 @@ class ListBuilder {
         this.sections = this.parseDataset(root.dataset.sections);
         this.supermarketById = new Map(this.supermarkets.map((market) => [market.id, market]));
         this.sectionById = new Map(this.sections.map((section) => [section.id, section]));
-        this.items = [];
+        this.items = this.parseInitialItems(this.itemsInput?.value ?? '[]');
 
         this.elements = {
             existingProduct: root.querySelector('[data-existing-product]'),
@@ -19,6 +19,7 @@ class ListBuilder {
             existingPrice: root.querySelector('[data-existing-price]'),
             existingSupermarket: root.querySelector('[data-existing-supermarket]'),
             existingSection: root.querySelector('[data-existing-section]'),
+            existingSectionNumber: root.querySelector('[data-existing-section-number]'),
             existingSectionName: root.querySelector('[data-existing-section-name]'),
             addExistingButton: root.querySelector('[data-action="add-existing"]'),
             manualName: root.querySelector('[data-manual-name]'),
@@ -28,12 +29,14 @@ class ListBuilder {
             manualQuantity: root.querySelector('[data-manual-quantity]'),
             manualPrice: root.querySelector('[data-manual-price]'),
             manualSupermarket: root.querySelector('[data-manual-supermarket]'),
+            manualSectionNumber: root.querySelector('[data-manual-section-number]'),
             manualSectionName: root.querySelector('[data-manual-section-name]'),
             manualNotes: root.querySelector('[data-manual-notes]'),
             addManualButton: root.querySelector('[data-action="add-manual"]'),
         };
 
         this.bindEvents();
+        this.render();
     }
 
     parseDataset(value) {
@@ -45,6 +48,21 @@ class ListBuilder {
             return JSON.parse(value);
         } catch (error) {
             console.error('No se pudo parsear el dataset', error);
+            return [];
+        }
+    }
+
+    parseInitialItems(value) {
+        if (! value) {
+            return [];
+        }
+
+        try {
+            const parsed = JSON.parse(value);
+
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+            console.warn('No se pudieron leer los productos iniciales', error);
             return [];
         }
     }
@@ -78,6 +96,23 @@ class ListBuilder {
             }
         });
 
+        this.elements.existingSection?.addEventListener('change', () => {
+            const sectionId = this.parseNullableInt(this.elements.existingSection.value);
+            const section = sectionId ? this.sectionById.get(sectionId) : null;
+
+            if (! section) {
+                return;
+            }
+
+            if (this.elements.existingSectionNumber) {
+                this.elements.existingSectionNumber.value = section.position ?? '';
+            }
+
+            if (this.elements.existingSectionName && ! this.elements.existingSectionName.value) {
+                this.elements.existingSectionName.value = section.name ?? '';
+            }
+        });
+
         this.itemsTable.addEventListener('click', (event) => {
             const target = event.target;
 
@@ -106,7 +141,12 @@ class ListBuilder {
         const estimatedPrice = this.parsePrice(this.elements.existingPrice?.value);
         const supermarketId = this.parseNullableInt(this.elements.existingSupermarket?.value);
         const sectionId = this.parseNullableInt(this.elements.existingSection?.value);
+        const sectionNumberInput = this.parseNullableInt(this.elements.existingSectionNumber?.value);
+        const section = sectionId ? this.sectionById.get(sectionId) : null;
         const sectionNameInput = (this.elements.existingSectionName?.value || '').trim();
+        const finalSectionNumber = sectionNumberInput ?? section?.position ?? null;
+        const resolvedSectionName = this.resolveSectionName(sectionId);
+        const finalSectionName = sectionNameInput || resolvedSectionName || null;
 
         this.items.push({
             type: 'existing',
@@ -118,7 +158,8 @@ class ListBuilder {
             supermarket_id: supermarketId,
             supermarket_name: this.resolveSupermarketName(supermarketId),
             section_id: sectionId,
-            section_name: sectionNameInput || this.resolveSectionName(sectionId),
+            section_number: finalSectionNumber,
+            section_name: finalSectionName,
             notes: null,
         });
 
@@ -138,6 +179,7 @@ class ListBuilder {
         const quantity = Number.parseFloat(this.elements.manualQuantity?.value ?? '1') || 1;
         const estimatedPrice = this.parsePrice(this.elements.manualPrice?.value);
         const supermarketId = this.parseNullableInt(this.elements.manualSupermarket?.value);
+        const sectionNumber = this.parseNullableInt(this.elements.manualSectionNumber?.value);
         const sectionName = (this.elements.manualSectionName?.value || '').trim();
         const categoryId = this.parseNullableInt(this.elements.manualCategory?.value);
 
@@ -154,7 +196,8 @@ class ListBuilder {
             supermarket_id: supermarketId,
             supermarket_name: this.resolveSupermarketName(supermarketId),
             section_id: null,
-            section_name: sectionName,
+            section_number: sectionNumber,
+            section_name: sectionName || null,
             notes: (this.elements.manualNotes?.value || '').trim() || null,
         });
 
@@ -223,6 +266,10 @@ class ListBuilder {
             this.elements.existingSection.value = '';
         }
 
+        if (this.elements.existingSectionNumber) {
+            this.elements.existingSectionNumber.value = '';
+        }
+
         if (this.elements.existingSectionName) {
             this.elements.existingSectionName.value = '';
         }
@@ -257,6 +304,10 @@ class ListBuilder {
             this.elements.manualSupermarket.value = '';
         }
 
+        if (this.elements.manualSectionNumber) {
+            this.elements.manualSectionNumber.value = '';
+        }
+
         if (this.elements.manualSectionName) {
             this.elements.manualSectionName.value = '';
         }
@@ -281,6 +332,7 @@ class ListBuilder {
 
         this.items.forEach((item, index) => {
             const row = document.createElement('tr');
+            const sectionLabel = this.formatSectionLabel(item.section_number, item.section_name);
             row.innerHTML = `
                 <td class="px-4 py-2">
                     <p class="font-medium text-slate-800">${this.escapeHtml(item.product_name ?? item.name)}</p>
@@ -288,7 +340,7 @@ class ListBuilder {
                 </td>
                 <td class="px-4 py-2">${item.quantity} ${this.escapeHtml(item.quantity_unit ?? '')}</td>
                 <td class="px-4 py-2 text-sm text-slate-600">${this.escapeHtml(item.supermarket_name ?? 'Por definir')}</td>
-                <td class="px-4 py-2 text-sm text-slate-600">${this.escapeHtml(item.section_name ?? '')}</td>
+                <td class="px-4 py-2 text-sm text-slate-600">${sectionLabel}</td>
                 <td class="px-4 py-2 text-sm text-slate-700">${this.formatPrice(item.quantity, item.estimated_price)}</td>
                 <td class="px-4 py-2 text-right">
                     <button type="button" data-action="remove-item" data-index="${index}" class="text-sm text-rose-600 hover:underline">Eliminar</button>
@@ -296,6 +348,17 @@ class ListBuilder {
             `;
             this.itemsTable.appendChild(row);
         });
+    }
+
+    formatSectionLabel(sectionNumber, sectionName) {
+        const hasNumber = sectionNumber !== null && sectionNumber !== undefined;
+        const safeName = sectionName ? this.escapeHtml(sectionName) : '';
+
+        if (hasNumber) {
+            return safeName ? `Pasillo ${sectionNumber} · ${safeName}` : `Pasillo ${sectionNumber}`;
+        }
+
+        return safeName || 'Sin pasillo';
     }
 
     formatPrice(quantity, estimatedPrice) {
@@ -327,8 +390,154 @@ class ListBuilder {
     }
 }
 
+class SectionBuilder {
+    constructor(root) {
+        this.root = root;
+        this.sections = this.parseInitialSections(root.dataset.sections ?? '[]');
+        this.elements = {
+            number: root.querySelector('[data-section-number]'),
+            name: root.querySelector('[data-section-name]'),
+            addButton: root.querySelector('[data-add-section]'),
+            list: root.querySelector('[data-section-list]'),
+            hidden: root.querySelector('[data-section-hidden]'),
+        };
+
+        this.bindEvents();
+        this.render();
+    }
+
+    parseInitialSections(value) {
+        try {
+            const parsed = JSON.parse(value);
+
+            if (Array.isArray(parsed)) {
+                return parsed
+                    .map((item) => ({
+                        number: Number.parseInt(item.number, 10),
+                        name: item.name ?? '',
+                    }))
+                    .filter((item) => ! Number.isNaN(item.number) && item.name);
+            }
+        } catch (error) {
+            console.warn('No se pudieron leer los pasillos iniciales', error);
+        }
+
+        return [];
+    }
+
+    bindEvents() {
+        this.elements.addButton?.addEventListener('click', () => this.addSection());
+
+        this.elements.list?.addEventListener('click', (event) => {
+            const target = event.target;
+
+            if (target instanceof HTMLElement && target.dataset.action === 'remove-section') {
+                const index = Number.parseInt(target.dataset.index ?? '', 10);
+
+                if (! Number.isNaN(index)) {
+                    this.sections.splice(index, 1);
+                    this.render();
+                }
+            }
+        });
+    }
+
+    addSection() {
+        const number = this.parseNumber(this.elements.number?.value ?? '');
+        const name = (this.elements.name?.value || '').trim();
+
+        if (number === null) {
+            alert('Indica el número de pasillo.');
+            return;
+        }
+
+        if (! name) {
+            alert('Describe qué hay en el pasillo.');
+            return;
+        }
+
+        this.sections.push({ number, name });
+        this.sections.sort((a, b) => a.number - b.number);
+
+        if (this.elements.number) {
+            this.elements.number.value = '';
+        }
+
+        if (this.elements.name) {
+            this.elements.name.value = '';
+        }
+
+        this.render();
+    }
+
+    parseNumber(value) {
+        if (value === '') {
+            return null;
+        }
+
+        const parsed = Number.parseInt(value, 10);
+
+        return Number.isNaN(parsed) ? null : parsed;
+    }
+
+    render() {
+        if (! this.elements.list || ! this.elements.hidden) {
+            return;
+        }
+
+        this.elements.list.innerHTML = '';
+        this.elements.hidden.innerHTML = '';
+
+        if (this.sections.length === 0) {
+            const placeholder = document.createElement('p');
+            placeholder.className = 'text-xs text-slate-500';
+            placeholder.textContent = 'Aún no agregaste pasillos.';
+            this.elements.list.appendChild(placeholder);
+        } else {
+            this.sections.forEach((section, index) => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700';
+                row.innerHTML = `
+                    <div>
+                        <p class="font-medium text-slate-800">Pasillo ${section.number}</p>
+                        <p class="text-xs text-slate-500">${this.escapeHtml(section.name)}</p>
+                    </div>
+                    <button type="button" data-action="remove-section" data-index="${index}" class="text-xs font-semibold text-rose-600 hover:underline">Quitar</button>
+                `;
+                this.elements.list.appendChild(row);
+            });
+        }
+
+        this.sections.forEach((section, index) => {
+            const numberInput = document.createElement('input');
+            numberInput.type = 'hidden';
+            numberInput.name = `sections[${index}][number]`;
+            numberInput.value = section.number;
+            this.elements.hidden.appendChild(numberInput);
+
+            const nameInput = document.createElement('input');
+            nameInput.type = 'hidden';
+            nameInput.name = `sections[${index}][name]`;
+            nameInput.value = section.name;
+            this.elements.hidden.appendChild(nameInput);
+        });
+    }
+
+    escapeHtml(value) {
+        return value
+            .toString()
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-list-builder]').forEach((element) => {
         new ListBuilder(element);
+    });
+
+    document.querySelectorAll('[data-section-builder]').forEach((element) => {
+        new SectionBuilder(element);
     });
 });

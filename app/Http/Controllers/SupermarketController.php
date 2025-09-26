@@ -14,7 +14,9 @@ class SupermarketController extends Controller
 {
     public function index(): View
     {
-        $supermarkets = Supermarket::with('sections')->orderBy('name')->get();
+        $supermarkets = Supermarket::with(['sections' => fn ($query) => $query->orderBy('position')->orderBy('name')])
+            ->orderBy('name')
+            ->get();
 
         return view('supermarkets.index', [
             'supermarkets' => $supermarkets,
@@ -31,7 +33,9 @@ class SupermarketController extends Controller
             'state' => ['nullable', 'string', 'max:255'],
             'country' => ['nullable', 'string', 'max:255'],
             'postal_code' => ['nullable', 'string', 'max:50'],
-            'sections' => ['nullable', 'string'],
+            'sections' => ['nullable', 'array'],
+            'sections.*.number' => ['required', 'integer', 'min:0', 'max:65535'],
+            'sections.*.name' => ['required', 'string', 'max:255'],
         ]);
 
         $name = $data['name'];
@@ -56,19 +60,27 @@ class SupermarketController extends Controller
             'opening_hours' => null,
         ]);
 
-        $sectionsInput = collect(preg_split('/\r?\n/', (string) Arr::get($data, 'sections', '')))
-            ->map(fn ($value) => trim($value))
-            ->filter()
+        $sectionsInput = collect(Arr::get($data, 'sections', []))
+            ->map(fn ($section) => [
+                'number' => (int) Arr::get($section, 'number', 0),
+                'name' => trim((string) Arr::get($section, 'name', '')),
+            ])
+            ->filter(fn ($section) => $section['name'] !== '')
+            ->unique(fn ($section) => $section['number'].'|'.$section['name'])
+            ->sortBy('number')
             ->values();
 
-        foreach ($sectionsInput as $index => $sectionName) {
-            SupermarketSection::firstOrCreate([
-                'supermarket_id' => $supermarket->id,
-                'name' => $sectionName,
-            ], [
-                'position' => $index + 1,
-                'is_active' => true,
-            ]);
+        foreach ($sectionsInput as $sectionData) {
+            SupermarketSection::updateOrCreate(
+                [
+                    'supermarket_id' => $supermarket->id,
+                    'name' => $sectionData['name'],
+                ],
+                [
+                    'position' => $sectionData['number'],
+                    'is_active' => true,
+                ],
+            );
         }
 
         return redirect()

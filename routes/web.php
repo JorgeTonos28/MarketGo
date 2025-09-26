@@ -25,6 +25,8 @@ Route::middleware('auth')->group(function (): void {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
 
     Route::resource('shopping-lists', ShoppingListController::class)->only(['index', 'create', 'store', 'show']);
+    Route::post('shopping-lists/{shopping_list}/items', [ShoppingListController::class, 'addItems'])
+        ->name('shopping-lists.items.store');
 
     Route::patch('shopping-lists/{shopping_list}/items/{shopping_list_item}/status', ShoppingListItemStatusController::class)
         ->name('shopping-lists.items.status');

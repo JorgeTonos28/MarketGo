@@ -48,6 +48,27 @@
         </div>
     @endif
 
+    <section class="bg-white border border-slate-100 rounded-xl shadow-sm p-6 mb-8">
+        <header class="mb-6">
+            <h2 class="text-lg font-semibold text-slate-800">Agregar productos a la lista</h2>
+            <p class="text-sm text-slate-500">Busca en el catálogo, captura precios y asigna el pasillo correcto para mantener el recorrido optimizado.</p>
+        </header>
+
+        <form method="POST" action="{{ route('shopping-lists.items.store', $shoppingList) }}" class="space-y-6">
+            @csrf
+
+            @include('shopping-lists.partials.item-builder', [
+                'supermarkets' => $supermarkets,
+                'products' => $products,
+                'categories' => $categories,
+            ])
+
+            <div class="flex justify-end">
+                <button type="submit" class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow hover:bg-indigo-500">Agregar productos a la lista</button>
+            </div>
+        </form>
+    </section>
+
     <div class="grid gap-6 lg:grid-cols-2">
         <section class="bg-white border border-slate-100 rounded-xl shadow-sm">
             <header class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
@@ -55,22 +76,26 @@
                 <span class="text-xs text-slate-500">Ordenado por pasillos</span>
             </header>
             <div class="divide-y divide-slate-100">
-                @forelse($groupedPending as $groupKey => $items)
+                @forelse($pendingGroups as $group)
                     @php
-                        [$marketName, $sectionName] = explode('||', $groupKey);
-                        $marketName = $marketName ?: 'Sin establecimiento';
-                        $sectionName = $sectionName ?: 'Sin pasillo';
+                        $sectionLabel = $group['section_number'] !== null
+                            ? 'Pasillo ' . $group['section_number']
+                            : 'Sin pasillo';
+
+                        if (! empty($group['section_name']) && $group['section_name'] !== 'Sin pasillo') {
+                            $sectionLabel .= ' · ' . $group['section_name'];
+                        }
                     @endphp
                     <article class="px-6 py-4">
                         <div class="flex items-center justify-between mb-3">
                             <div>
-                                <p class="text-sm font-semibold text-slate-700">{{ $marketName }}</p>
-                                <p class="text-xs text-slate-500">Pasillo: {{ $sectionName }}</p>
+                                <p class="text-sm font-semibold text-slate-700">{{ $group['supermarket_name'] }}</p>
+                                <p class="text-xs text-slate-500">{{ $sectionLabel }}</p>
                             </div>
-                            <span class="text-xs text-slate-400">{{ $items->count() }} productos</span>
+                            <span class="text-xs text-slate-400">{{ $group['items']->count() }} productos</span>
                         </div>
                         <ul class="space-y-3">
-                            @foreach($items as $item)
+                            @foreach($group['items'] as $item)
                                 <li class="flex items-start justify-between gap-4">
                                     <div>
                                         <p class="font-medium text-slate-800">{{ $item->product->name }}</p>
@@ -101,22 +126,26 @@
                 <span class="text-xs text-slate-500">Marca los productos que ya tomaste</span>
             </header>
             <div class="divide-y divide-slate-100">
-                @forelse($groupedCart as $groupKey => $items)
+                @forelse($cartGroups as $group)
                     @php
-                        [$marketName, $sectionName] = explode('||', $groupKey);
-                        $marketName = $marketName ?: 'Sin establecimiento';
-                        $sectionName = $sectionName ?: 'Sin pasillo';
+                        $sectionLabel = $group['section_number'] !== null
+                            ? 'Pasillo ' . $group['section_number']
+                            : 'Sin pasillo';
+
+                        if (! empty($group['section_name']) && $group['section_name'] !== 'Sin pasillo') {
+                            $sectionLabel .= ' · ' . $group['section_name'];
+                        }
                     @endphp
                     <article class="px-6 py-4">
                         <div class="flex items-center justify-between mb-3">
                             <div>
-                                <p class="text-sm font-semibold text-slate-700">{{ $marketName }}</p>
-                                <p class="text-xs text-slate-500">Pasillo: {{ $sectionName }}</p>
+                                <p class="text-sm font-semibold text-slate-700">{{ $group['supermarket_name'] }}</p>
+                                <p class="text-xs text-slate-500">{{ $sectionLabel }}</p>
                             </div>
-                            <span class="text-xs text-slate-400">{{ $items->count() }} productos</span>
+                            <span class="text-xs text-slate-400">{{ $group['items']->count() }} productos</span>
                         </div>
                         <ul class="space-y-3">
-                            @foreach($items as $item)
+                            @foreach($group['items'] as $item)
                                 <li class="flex items-start justify-between gap-4 opacity-70">
                                     <div>
                                         <p class="font-medium text-slate-800">{{ $item->product->name }}</p>

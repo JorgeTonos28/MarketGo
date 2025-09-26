@@ -34,7 +34,9 @@ class ShoppingListController extends Controller
 
     public function create(Request $request): View
     {
-        $supermarkets = Supermarket::with('sections')->orderBy('name')->get();
+        $supermarkets = Supermarket::with(['sections' => fn ($query) => $query->orderBy('position')->orderBy('name')])
+            ->orderBy('name')
+            ->get();
         $products = Product::with('category')->orderBy('name')->get();
         $categories = ProductCategory::orderBy('name')->get();
 
@@ -85,9 +87,6 @@ class ShoppingListController extends Controller
                 'notes' => Arr::get($data, 'notes'),
             ]);
 
-            $totalEstimate = 0;
-            $createdItems = [];
-
             foreach ($itemsPayload as $rawItem) {
                 $item = $this->normalizeItemPayload($rawItem, $defaultSupermarketId);
 
@@ -116,28 +115,9 @@ class ShoppingListController extends Controller
                     'notes' => $item['notes'] ?? null,
                     'position' => 0,
                 ]);
-
-                if ($estimatedPrice !== null) {
-                    $totalEstimate += $estimatedPrice;
-                }
-
-                $createdItems[] = [
-                    'model' => $listItem,
-                    'supermarket_name' => optional($listItem->supermarket)->name ?? '',
-                    'section_name' => $section?->name ?? $item['section_name'] ?? '',
-                    'product_name' => $product->name,
-                ];
             }
 
-            $orderedItems = collect($createdItems)
-                ->sortBy([['supermarket_name', 'asc'], ['section_name', 'asc'], ['product_name', 'asc']])
-                ->values();
-
-            foreach ($orderedItems as $index => $item) {
-                $item['model']->update(['position' => $index + 1]);
-            }
-
-            $shoppingList->update(['estimated_total' => round($totalEstimate, 2)]);
+            $this->refreshListOrderingAndTotals($shoppingList);
 
             return $shoppingList;
         });
@@ -147,6 +127,71 @@ class ShoppingListController extends Controller
             ->with('status', 'Lista creada y lista para ir de compras.');
     }
 
+    public function addItems(Request $request, ShoppingList $shoppingList): RedirectResponse
+    {
+        if ($shoppingList->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'items' => ['required', 'string'],
+        ]);
+
+        try {
+            $itemsPayload = json_decode($data['items'], true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $exception) {
+            return back()
+                ->withInput()
+                ->withErrors(['items' => 'No pudimos interpretar los productos seleccionados.']);
+        }
+
+        if (! is_array($itemsPayload) || count($itemsPayload) === 0) {
+            return back()
+                ->withInput()
+                ->withErrors(['items' => 'Agrega al menos un producto a la lista.']);
+        }
+
+        $defaultSupermarketId = $shoppingList->supermarket_id;
+
+        DB::transaction(function () use ($itemsPayload, $defaultSupermarketId, $shoppingList) {
+            foreach ($itemsPayload as $rawItem) {
+                $item = $this->normalizeItemPayload($rawItem, $defaultSupermarketId);
+
+                if ($item === null) {
+                    continue;
+                }
+
+                [$product, $section] = $this->resolveProductAndSection($item);
+
+                $itemSupermarketId = $item['supermarket_id'] ?? $defaultSupermarketId;
+                $quantity = $item['quantity'] ?? 1;
+                $estimatedUnitPrice = $item['estimated_price'];
+                $estimatedPrice = $estimatedUnitPrice !== null
+                    ? round($estimatedUnitPrice * $quantity, 2)
+                    : null;
+
+                ShoppingListItem::create([
+                    'shopping_list_id' => $shoppingList->id,
+                    'product_id' => $product->id,
+                    'supermarket_id' => $itemSupermarketId,
+                    'supermarket_section_id' => $section?->id,
+                    'quantity' => $quantity,
+                    'quantity_unit' => $item['quantity_unit'] ?? $product->unit,
+                    'status' => 'pending',
+                    'estimated_price' => $estimatedPrice,
+                    'notes' => $item['notes'] ?? null,
+                    'position' => 0,
+                ]);
+            }
+
+            $this->refreshListOrderingAndTotals($shoppingList);
+        });
+
+        return redirect()
+            ->route('shopping-lists.show', $shoppingList)
+            ->with('status', 'Productos agregados a la lista.');
+    }
+
     public function show(Request $request, ShoppingList $shoppingList): View
     {
         if ($shoppingList->user_id !== $request->user()->id) {
@@ -154,26 +199,121 @@ class ShoppingListController extends Controller
         }
 
         $shoppingList->load([
-            'supermarket.sections' => fn ($query) => $query->orderBy('name'),
+            'supermarket.sections' => fn ($query) => $query->orderBy('position')->orderBy('name'),
             'items.product',
             'items.section',
             'items.supermarket',
         ]);
 
-        $pendingItems = $shoppingList->items->where('status', 'pending');
-        $inCartItems = $shoppingList->items->where('status', 'in_cart');
+        $sortedItems = $shoppingList->items->sortBy(function ($item) use ($shoppingList) {
+            $supermarketName = optional($item->supermarket)->name ?? ($shoppingList->supermarket->name ?? 'zzzzzz');
+            $sectionPosition = optional($item->section)->position ?? 99999;
+            $sectionName = optional($item->section)->name ?? 'zzzzzz';
+            $productName = optional($item->product)->name ?? '';
 
-        $groupedPending = $pendingItems
-            ->groupBy(fn ($item) => ($item->supermarket?->name ?? 'Sin establecimiento') . '||' . ($item->section?->name ?? 'Sin pasillo'));
+            return sprintf(
+                '%s|%05d|%s|%s',
+                Str::lower($supermarketName),
+                $sectionPosition,
+                Str::lower($sectionName),
+                Str::lower($productName)
+            );
+        });
 
-        $groupedCart = $inCartItems
-            ->groupBy(fn ($item) => ($item->supermarket?->name ?? 'Sin establecimiento') . '||' . ($item->section?->name ?? 'Sin pasillo'));
+        $pendingGroups = $sortedItems
+            ->where('status', 'pending')
+            ->groupBy(fn ($item) => ($item->supermarket_id ?? 0) . '|' . ($item->supermarket_section_id ?? 0))
+            ->map(function ($items) use ($shoppingList) {
+                $first = $items->first();
+
+                return [
+                    'supermarket_name' => optional($first->supermarket)->name ?? ($shoppingList->supermarket->name ?? 'Sin establecimiento'),
+                    'section_name' => optional($first->section)->name ?? 'Sin pasillo',
+                    'section_number' => optional($first->section)->position,
+                    'items' => $items->values(),
+                ];
+            })
+            ->sortBy(function ($group) {
+                return sprintf(
+                    '%s|%05d|%s',
+                    Str::lower($group['supermarket_name']),
+                    $group['section_number'] ?? 99999,
+                    Str::lower($group['section_name'])
+                );
+            })
+            ->values();
+
+        $cartGroups = $sortedItems
+            ->where('status', 'in_cart')
+            ->groupBy(fn ($item) => ($item->supermarket_id ?? 0) . '|' . ($item->supermarket_section_id ?? 0))
+            ->map(function ($items) use ($shoppingList) {
+                $first = $items->first();
+
+                return [
+                    'supermarket_name' => optional($first->supermarket)->name ?? ($shoppingList->supermarket->name ?? 'Sin establecimiento'),
+                    'section_name' => optional($first->section)->name ?? 'Sin pasillo',
+                    'section_number' => optional($first->section)->position,
+                    'items' => $items->values(),
+                ];
+            })
+            ->sortBy(function ($group) {
+                return sprintf(
+                    '%s|%05d|%s',
+                    Str::lower($group['supermarket_name']),
+                    $group['section_number'] ?? 99999,
+                    Str::lower($group['section_name'])
+                );
+            })
+            ->values();
+
+        $supermarkets = Supermarket::with(['sections' => fn ($query) => $query->orderBy('position')->orderBy('name')])
+            ->orderBy('name')
+            ->get();
+        $products = Product::with('category')->orderBy('name')->get();
+        $categories = ProductCategory::orderBy('name')->get();
 
         return view('shopping-lists.show', [
             'shoppingList' => $shoppingList,
-            'groupedPending' => $groupedPending,
-            'groupedCart' => $groupedCart,
+            'pendingGroups' => $pendingGroups,
+            'cartGroups' => $cartGroups,
+            'supermarkets' => $supermarkets,
+            'products' => $products,
+            'categories' => $categories,
         ]);
+    }
+
+    private function refreshListOrderingAndTotals(ShoppingList $shoppingList): void
+    {
+        $items = $shoppingList->items()
+            ->with(['supermarket', 'section', 'product'])
+            ->get();
+
+        $sorted = $items->sortBy(function ($item) use ($shoppingList) {
+            $supermarketName = optional($item->supermarket)->name ?? ($shoppingList->supermarket->name ?? 'zzzzzz');
+            $sectionPosition = optional($item->section)->position ?? 99999;
+            $sectionName = optional($item->section)->name ?? 'zzzzzz';
+            $productName = optional($item->product)->name ?? '';
+
+            return sprintf(
+                '%s|%05d|%s|%s',
+                Str::lower($supermarketName),
+                $sectionPosition,
+                Str::lower($sectionName),
+                Str::lower($productName)
+            );
+        })->values();
+
+        foreach ($sorted as $index => $item) {
+            $position = $index + 1;
+
+            if ($item->position !== $position) {
+                $item->update(['position' => $position]);
+            }
+        }
+
+        $estimatedTotal = $items->sum(fn ($item) => $item->estimated_price ?? 0);
+
+        $shoppingList->update(['estimated_total' => round($estimatedTotal, 2)]);
     }
 
     private function normalizeItemPayload(array $rawItem, ?int $defaultSupermarketId): ?array
@@ -189,6 +329,16 @@ class ShoppingListController extends Controller
                 return null;
             }
 
+            $sectionName = isset($rawItem['section_name']) ? trim((string) $rawItem['section_name']) : null;
+
+            if ($sectionName === '') {
+                $sectionName = null;
+            }
+
+            $sectionNumber = isset($rawItem['section_number']) && $rawItem['section_number'] !== ''
+                ? (int) $rawItem['section_number']
+                : null;
+
             return [
                 'type' => 'existing',
                 'product_id' => (int) $rawItem['product_id'],
@@ -197,7 +347,8 @@ class ShoppingListController extends Controller
                 'estimated_price' => isset($rawItem['estimated_price']) ? (float) $rawItem['estimated_price'] : null,
                 'supermarket_id' => isset($rawItem['supermarket_id']) ? (int) $rawItem['supermarket_id'] : $defaultSupermarketId,
                 'section_id' => isset($rawItem['section_id']) ? (int) $rawItem['section_id'] : null,
-                'section_name' => $rawItem['section_name'] ?? null,
+                'section_name' => $sectionName,
+                'section_number' => $sectionNumber,
                 'notes' => $rawItem['notes'] ?? null,
             ];
         }
@@ -205,6 +356,16 @@ class ShoppingListController extends Controller
         if (empty($rawItem['name']) || empty($rawItem['unit'])) {
             return null;
         }
+
+        $sectionName = isset($rawItem['section_name']) ? trim((string) $rawItem['section_name']) : null;
+
+        if ($sectionName === '') {
+            $sectionName = null;
+        }
+
+        $sectionNumber = isset($rawItem['section_number']) && $rawItem['section_number'] !== ''
+            ? (int) $rawItem['section_number']
+            : null;
 
         return [
             'type' => 'manual',
@@ -217,7 +378,8 @@ class ShoppingListController extends Controller
             'estimated_price' => isset($rawItem['estimated_price']) ? (float) $rawItem['estimated_price'] : null,
             'supermarket_id' => isset($rawItem['supermarket_id']) ? (int) $rawItem['supermarket_id'] : $defaultSupermarketId,
             'section_id' => isset($rawItem['section_id']) ? (int) $rawItem['section_id'] : null,
-            'section_name' => $rawItem['section_name'] ?? null,
+            'section_name' => $sectionName,
+            'section_number' => $sectionNumber,
             'category_id' => isset($rawItem['category_id']) ? (int) $rawItem['category_id'] : null,
             'notes' => $rawItem['notes'] ?? null,
         ];
@@ -272,34 +434,73 @@ class ShoppingListController extends Controller
         $supermarketId = $item['supermarket_id'] ?? null;
         $sectionId = $item['section_id'] ?? null;
         $sectionName = isset($item['section_name']) ? trim($item['section_name']) : '';
+        $sectionNumber = $item['section_number'] ?? null;
 
         if ($sectionId) {
             $section = SupermarketSection::find($sectionId);
 
             if ($section && (! $supermarketId || $section->supermarket_id === $supermarketId)) {
+                $updates = [];
+
+                if ($sectionNumber !== null && $section->position !== $sectionNumber) {
+                    $updates['position'] = $sectionNumber;
+                }
+
+                if ($sectionName !== '' && $section->name !== $sectionName) {
+                    $updates['name'] = $sectionName;
+                }
+
+                if ($updates !== []) {
+                    $section->update($updates);
+                }
+
                 return $section;
             }
         }
 
-        if ($supermarketId && $sectionName !== '') {
-            $existing = SupermarketSection::where('supermarket_id', $supermarketId)
+        if (! $supermarketId) {
+            return null;
+        }
+
+        if ($sectionNumber !== null) {
+            $existingByNumber = SupermarketSection::where('supermarket_id', $supermarketId)
+                ->where('position', $sectionNumber)
+                ->first();
+
+            if ($existingByNumber) {
+                if ($sectionName !== '' && $existingByNumber->name !== $sectionName) {
+                    $existingByNumber->update(['name' => $sectionName]);
+                }
+
+                return $existingByNumber;
+            }
+        }
+
+        if ($sectionName !== '') {
+            $existingByName = SupermarketSection::where('supermarket_id', $supermarketId)
                 ->where('name', $sectionName)
                 ->first();
 
-            if ($existing) {
-                return $existing;
+            if ($existingByName) {
+                if ($sectionNumber !== null && $existingByName->position !== $sectionNumber) {
+                    $existingByName->update(['position' => $sectionNumber]);
+                }
+
+                return $existingByName;
             }
-
-            $position = (SupermarketSection::where('supermarket_id', $supermarketId)->max('position') ?? 0) + 1;
-
-            return SupermarketSection::create([
-                'supermarket_id' => $supermarketId,
-                'name' => $sectionName,
-                'position' => $position,
-                'is_active' => true,
-            ]);
         }
 
-        return null;
+        if ($sectionNumber === null && $sectionName === '') {
+            return null;
+        }
+
+        $position = $sectionNumber ?? (SupermarketSection::where('supermarket_id', $supermarketId)->max('position') ?? 0) + 1;
+
+        return SupermarketSection::create([
+            'supermarket_id' => $supermarketId,
+            'name' => $sectionName !== '' ? $sectionName : 'Pasillo '.$position,
+            'position' => $position,
+            'is_active' => true,
+        ]);
     }
 }
