@@ -338,7 +338,7 @@
                     </div>
                 </div>
                 @if ($supermarkets->isNotEmpty())
-                    <form class="supermarket-selector" method="GET" action="{{ route('home') }}">
+                    <form class="supermarket-selector" method="GET" action="{{ route('admin.dashboard') }}">
                         <label for="supermarket">Supermercado</label>
                         <select name="supermarket" id="supermarket">
                             @foreach ($supermarkets as $supermarket)

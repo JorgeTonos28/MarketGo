@@ -18,6 +18,7 @@ class ShoppingListItem extends Model
         'product_id',
         'inventory_item_id',
         'supermarket_section_id',
+        'supermarket_id',
         'quantity',
         'quantity_unit',
         'status',
@@ -67,5 +68,13 @@ class ShoppingListItem extends Model
     public function section(): BelongsTo
     {
         return $this->belongsTo(SupermarketSection::class, 'supermarket_section_id');
+    }
+
+    /**
+     * @return BelongsTo<Supermarket, ShoppingListItem>
+     */
+    public function supermarket(): BelongsTo
+    {
+        return $this->belongsTo(Supermarket::class);
     }
 }
