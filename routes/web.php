@@ -33,6 +33,7 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('supermarkets', [SupermarketController::class, 'index'])->name('supermarkets.index');
     Route::post('supermarkets', [SupermarketController::class, 'store'])->name('supermarkets.store');
+    Route::put('supermarkets/{supermarket}', [SupermarketController::class, 'update'])->name('supermarkets.update');
 });
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function (): void {

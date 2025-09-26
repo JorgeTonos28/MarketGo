@@ -206,7 +206,9 @@ class ShoppingListController extends Controller
         ]);
 
         $sortedItems = $shoppingList->items->sortBy(function ($item) use ($shoppingList) {
-            $supermarketName = optional($item->supermarket)->name ?? ($shoppingList->supermarket->name ?? 'zzzzzz');
+            $supermarketName = optional($item->supermarket)->name
+                ?? optional($shoppingList->supermarket)->name
+                ?? 'zzzzzz';
             $sectionPosition = optional($item->section)->position ?? 99999;
             $sectionName = optional($item->section)->name ?? 'zzzzzz';
             $productName = optional($item->product)->name ?? '';
@@ -227,7 +229,9 @@ class ShoppingListController extends Controller
                 $first = $items->first();
 
                 return [
-                    'supermarket_name' => optional($first->supermarket)->name ?? ($shoppingList->supermarket->name ?? 'Sin establecimiento'),
+                    'supermarket_name' => optional($first->supermarket)->name
+                        ?? optional($shoppingList->supermarket)->name
+                        ?? 'Sin establecimiento',
                     'section_name' => optional($first->section)->name ?? 'Sin pasillo',
                     'section_number' => optional($first->section)->position,
                     'items' => $items->values(),
@@ -250,7 +254,9 @@ class ShoppingListController extends Controller
                 $first = $items->first();
 
                 return [
-                    'supermarket_name' => optional($first->supermarket)->name ?? ($shoppingList->supermarket->name ?? 'Sin establecimiento'),
+                    'supermarket_name' => optional($first->supermarket)->name
+                        ?? optional($shoppingList->supermarket)->name
+                        ?? 'Sin establecimiento',
                     'section_name' => optional($first->section)->name ?? 'Sin pasillo',
                     'section_number' => optional($first->section)->position,
                     'items' => $items->values(),
@@ -289,7 +295,9 @@ class ShoppingListController extends Controller
             ->get();
 
         $sorted = $items->sortBy(function ($item) use ($shoppingList) {
-            $supermarketName = optional($item->supermarket)->name ?? ($shoppingList->supermarket->name ?? 'zzzzzz');
+            $supermarketName = optional($item->supermarket)->name
+                ?? optional($shoppingList->supermarket)->name
+                ?? 'zzzzzz';
             $sectionPosition = optional($item->section)->position ?? 99999;
             $sectionName = optional($item->section)->name ?? 'zzzzzz';
             $productName = optional($item->product)->name ?? '';

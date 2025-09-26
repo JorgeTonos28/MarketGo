@@ -13,6 +13,23 @@
             </div>
             <div class="space-y-4">
                 @forelse($supermarkets as $market)
+                    @php
+                        $isEditing = old('editing_supermarket_id') == $market->id;
+                        $sectionsForEditor = $isEditing
+                            ? collect(old('sections', []))
+                                ->map(fn ($section) => [
+                                    'id' => $section['id'] ?? null,
+                                    'number' => $section['number'] ?? null,
+                                    'name' => $section['name'] ?? '',
+                                ])
+                                ->values()
+                            : $market->sections->map(fn ($section) => [
+                                'id' => $section->id,
+                                'number' => $section->position,
+                                'name' => $section->name,
+                            ])->values();
+                    @endphp
+
                     <article class="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                             <div>
@@ -31,6 +48,121 @@
                                 @endforeach
                             </div>
                         @endif
+
+                        <details class="mt-4 border-t border-slate-100 pt-4">
+                            <summary class="text-sm font-semibold text-indigo-600 cursor-pointer">Editar establecimiento</summary>
+                            <div class="mt-3">
+                                <form method="POST" action="{{ route('supermarkets.update', $market) }}" class="space-y-4">
+                                    @csrf
+                                    @method('PUT')
+
+                                    <input type="hidden" name="editing_supermarket_id" value="{{ $market->id }}">
+
+                                    <div class="grid gap-4 sm:grid-cols-2">
+                                        <div class="sm:col-span-2">
+                                            <label class="block text-xs font-medium text-slate-500 mb-1" for="name-{{ $market->id }}">Nombre *</label>
+                                            <input
+                                                type="text"
+                                                id="name-{{ $market->id }}"
+                                                name="name"
+                                                value="{{ $isEditing ? old('name') : $market->name }}"
+                                                required
+                                                class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            >
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-slate-500 mb-1" for="brand-{{ $market->id }}">Marca o tipo</label>
+                                            <input
+                                                type="text"
+                                                id="brand-{{ $market->id }}"
+                                                name="brand"
+                                                value="{{ $isEditing ? old('brand') : $market->brand }}"
+                                                class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            >
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-slate-500 mb-1" for="address-{{ $market->id }}">Dirección</label>
+                                            <input
+                                                type="text"
+                                                id="address-{{ $market->id }}"
+                                                name="address_line1"
+                                                value="{{ $isEditing ? old('address_line1') : $market->address_line1 }}"
+                                                class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            >
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-slate-500 mb-1" for="city-{{ $market->id }}">Ciudad</label>
+                                            <input
+                                                type="text"
+                                                id="city-{{ $market->id }}"
+                                                name="city"
+                                                value="{{ $isEditing ? old('city') : $market->city }}"
+                                                class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            >
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-slate-500 mb-1" for="state-{{ $market->id }}">Estado / Provincia</label>
+                                            <input
+                                                type="text"
+                                                id="state-{{ $market->id }}"
+                                                name="state"
+                                                value="{{ $isEditing ? old('state') : $market->state }}"
+                                                class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            >
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-slate-500 mb-1" for="country-{{ $market->id }}">País</label>
+                                            <input
+                                                type="text"
+                                                id="country-{{ $market->id }}"
+                                                name="country"
+                                                value="{{ $isEditing ? old('country') : $market->country }}"
+                                                class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            >
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-slate-500 mb-1" for="postal-{{ $market->id }}">Código postal</label>
+                                            <input
+                                                type="text"
+                                                id="postal-{{ $market->id }}"
+                                                name="postal_code"
+                                                value="{{ $isEditing ? old('postal_code') : $market->postal_code }}"
+                                                class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            >
+                                        </div>
+                                    </div>
+
+                                    <div
+                                        data-section-builder
+                                        data-sections='@json($sectionsForEditor)'
+                                        class="space-y-4"
+                                    >
+                                        <div class="grid gap-3 sm:grid-cols-2">
+                                            <div>
+                                                <label class="block text-xs font-medium text-slate-500 mb-1">Número de pasillo</label>
+                                                <input type="number" min="0" data-section-number class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="1">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-slate-500 mb-1">¿Qué hay en el pasillo?</label>
+                                                <input type="text" data-section-name class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Frutas y verduras">
+                                            </div>
+                                            <div class="sm:col-span-2 flex justify-end">
+                                                <button type="button" data-add-section class="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg shadow hover:bg-slate-700">Agregar pasillo</button>
+                                            </div>
+                                        </div>
+                                        @if($isEditing && ($errors->has('sections') || $errors->has('sections.*.number') || $errors->has('sections.*.name')))
+                                            <p class="text-xs text-rose-600">Revisa los pasillos, cada uno necesita número y descripción.</p>
+                                        @endif
+                                        <div data-section-list class="space-y-2"></div>
+                                        <div data-section-hidden></div>
+                                    </div>
+
+                                    <div class="flex justify-end">
+                                        <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white font-semibold rounded-lg shadow hover:bg-emerald-500">Actualizar establecimiento</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </details>
                     </article>
                 @empty
                     <p class="text-sm text-slate-500">Todavía no hay establecimientos configurados.</p>

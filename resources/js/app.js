@@ -413,6 +413,9 @@ class SectionBuilder {
             if (Array.isArray(parsed)) {
                 return parsed
                     .map((item) => ({
+                        id: item.id !== undefined && item.id !== null && item.id !== ''
+                            ? Number.parseInt(item.id, 10)
+                            : null,
                         number: Number.parseInt(item.number, 10),
                         name: item.name ?? '',
                     }))
@@ -456,7 +459,7 @@ class SectionBuilder {
             return;
         }
 
-        this.sections.push({ number, name });
+        this.sections.push({ id: null, number, name });
         this.sections.sort((a, b) => a.number - b.number);
 
         if (this.elements.number) {
@@ -520,6 +523,14 @@ class SectionBuilder {
             nameInput.name = `sections[${index}][name]`;
             nameInput.value = section.name;
             this.elements.hidden.appendChild(nameInput);
+
+            if (section.id !== null && section.id !== undefined && ! Number.isNaN(section.id)) {
+                const idInput = document.createElement('input');
+                idInput.type = 'hidden';
+                idInput.name = `sections[${index}][id]`;
+                idInput.value = section.id;
+                this.elements.hidden.appendChild(idInput);
+            }
         });
     }
 

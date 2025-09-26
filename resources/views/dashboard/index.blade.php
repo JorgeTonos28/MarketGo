@@ -22,7 +22,9 @@
         <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-100">
             <h2 class="text-sm text-slate-500">Gastado último mes</h2>
             <p class="text-3xl font-semibold text-rose-600">${{ number_format($spentLastMonth, 2) }}</p>
-            <p class="text-xs text-slate-400 mt-1">Según tu historial de consumo.</p>
+            <p class="text-xs text-slate-400 mt-1">
+                Según tus registros de consumo. <a href="#consumption-insights" class="text-indigo-600 hover:underline">Ver detalle</a>
+            </p>
         </div>
     </div>
 
@@ -81,7 +83,7 @@
                 </ul>
             </section>
 
-            <section class="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+            <section id="consumption-insights" class="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
                 <h3 class="text-lg font-semibold text-slate-800 mb-4">Consumo reciente</h3>
                 <ul class="space-y-4 text-sm">
                     @forelse($recentConsumptions as $log)
