@@ -12,10 +12,16 @@
             <h1 class="text-2xl font-bold text-slate-800">Tus listas de compra</h1>
             <p class="text-sm text-slate-500">Administra tus listas activas, borradores y compras anteriores.</p>
         </div>
-        <a href="{{ route('shopping-lists.create') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-500">
-            <span class="text-lg">＋</span>
-            Nueva lista
-        </a>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('products.index') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-200 text-slate-700 rounded-lg shadow-sm hover:bg-slate-300">
+                <span class="text-lg">＋</span>
+                Agregar producto
+            </a>
+            <a href="{{ route('shopping-lists.create') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-500">
+                <span class="text-lg">＋</span>
+                Nueva lista
+            </a>
+        </div>
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">

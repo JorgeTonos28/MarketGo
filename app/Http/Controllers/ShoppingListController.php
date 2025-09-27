@@ -16,6 +16,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use JsonException;
+use Illuminate\Validation\Rule;
 
 class ShoppingListController extends Controller
 {
@@ -37,7 +38,9 @@ class ShoppingListController extends Controller
         $supermarkets = Supermarket::with(['sections' => fn ($query) => $query->orderBy('position')->orderBy('name')])
             ->orderBy('name')
             ->get();
-        $products = Product::with('category')->orderBy('name')->get();
+        $products = Product::with(['category', 'inventoryItems.supermarket', 'inventoryItems.section'])
+            ->orderBy('name')
+            ->get();
         $categories = ProductCategory::orderBy('name')->get();
 
         $productDataset = $products->map(function ($product) {
@@ -47,6 +50,19 @@ class ShoppingListController extends Controller
                 'unit' => $product->unit,
                 'brand' => $product->brand,
                 'category_id' => $product->product_category_id,
+                'product_category_id' => $product->product_category_id,
+                'package_size' => $product->package_size,
+                'average_price' => $product->average_price,
+                'description' => $product->description,
+                'inventory' => $product->inventoryItems->map(function ($item) {
+                    return [
+                        'supermarket_id' => $item->supermarket_id,
+                        'supermarket_name' => optional($item->supermarket)->name,
+                        'section_id' => $item->supermarket_section_id,
+                        'section_name' => optional($item->section)->name,
+                        'section_position' => optional($item->section)->position,
+                    ];
+                })->values(),
             ];
         })->values();
 
@@ -87,6 +103,7 @@ class ShoppingListController extends Controller
             'planned_for' => ['nullable', 'date'],
             'notes' => ['nullable', 'string'],
             'items' => ['required', 'string'],
+            'status' => ['required', Rule::in(['active', 'draft'])],
         ]);
 
         try {
@@ -111,7 +128,7 @@ class ShoppingListController extends Controller
                 'user_id' => $user->id,
                 'supermarket_id' => $defaultSupermarketId,
                 'name' => $data['name'],
-                'status' => 'active',
+                'status' => $data['status'],
                 'budget' => Arr::get($data, 'budget'),
                 'estimated_total' => 0,
                 'planned_for' => Arr::get($data, 'planned_for') ? Carbon::parse($data['planned_for']) : null,
@@ -156,6 +173,21 @@ class ShoppingListController extends Controller
         return redirect()
             ->route('shopping-lists.show', $shoppingList)
             ->with('status', 'Lista creada y lista para ir de compras.');
+    }
+
+    public function update(Request $request, ShoppingList $shoppingList): RedirectResponse
+    {
+        if ($shoppingList->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'status' => ['required', Rule::in(['active', 'draft'])],
+        ]);
+
+        $shoppingList->update(['status' => $data['status']]);
+
+        return back()->with('status', 'Estado de la lista actualizado.');
     }
 
     public function addItems(Request $request, ShoppingList $shoppingList): RedirectResponse
@@ -306,7 +338,9 @@ class ShoppingListController extends Controller
         $supermarkets = Supermarket::with(['sections' => fn ($query) => $query->orderBy('position')->orderBy('name')])
             ->orderBy('name')
             ->get();
-        $products = Product::with('category')->orderBy('name')->get();
+        $products = Product::with(['category', 'inventoryItems.supermarket', 'inventoryItems.section'])
+            ->orderBy('name')
+            ->get();
         $categories = ProductCategory::orderBy('name')->get();
 
         $productDataset = $products->map(function ($product) {
@@ -316,6 +350,19 @@ class ShoppingListController extends Controller
                 'unit' => $product->unit,
                 'brand' => $product->brand,
                 'category_id' => $product->product_category_id,
+                'product_category_id' => $product->product_category_id,
+                'package_size' => $product->package_size,
+                'average_price' => $product->average_price,
+                'description' => $product->description,
+                'inventory' => $product->inventoryItems->map(function ($item) {
+                    return [
+                        'supermarket_id' => $item->supermarket_id,
+                        'supermarket_name' => optional($item->supermarket)->name,
+                        'section_id' => $item->supermarket_section_id,
+                        'section_name' => optional($item->section)->name,
+                        'section_position' => optional($item->section)->position,
+                    ];
+                })->values(),
             ];
         })->values();
 
