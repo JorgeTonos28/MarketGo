@@ -11,7 +11,7 @@ class ShoppingListItemStatusController extends Controller
 {
     public function __invoke(Request $request, ShoppingList $shoppingList, ShoppingListItem $shoppingListItem): RedirectResponse
     {
-        if ($shoppingList->user_id !== $request->user()->id || $shoppingListItem->shopping_list_id !== $shoppingList->id) {
+        if ((int) $shoppingList->user_id !== (int) $request->user()->id || (int) $shoppingListItem->shopping_list_id !== (int) $shoppingList->id) {
             abort(403);
         }
 

@@ -53,6 +53,7 @@ class ProductController extends Controller
                         'section_id' => $item->supermarket_section_id,
                         'section_name' => optional($item->section)->name,
                         'section_position' => optional($item->section)->position,
+                        'price' => $item->price,
                     ];
                 })->values(),
             ];
@@ -104,8 +105,10 @@ class ProductController extends Controller
             'brand' => ['nullable', 'string', 'max:255'],
             'unit' => ['nullable', 'string', 'max:50'],
             'package_size' => ['nullable', 'string', 'max:255'],
-            'average_price' => ['nullable', 'numeric', 'min:0'],
             'description' => ['nullable', 'string'],
+            'inventories' => ['array'],
+            'inventories.*.supermarket_id' => ['required_with:inventories.*.price', 'exists:supermarkets,id'],
+            'inventories.*.price' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $slug = Str::slug($data['name']);
@@ -116,16 +119,18 @@ class ProductController extends Controller
             $slug .= '-' . Str::random(6);
         }
 
-        Product::create([
+        $product = Product::create([
             'product_category_id' => $data['product_category_id'],
             'name' => $data['name'],
             'slug' => $slug,
             'brand' => Arr::get($data, 'brand'),
             'unit' => Arr::get($data, 'unit'),
             'package_size' => Arr::get($data, 'package_size'),
-            'average_price' => Arr::get($data, 'average_price'),
             'description' => Arr::get($data, 'description'),
         ]);
+
+        $this->syncInventoryData($product, $data['inventories'] ?? []);
+        $this->refreshAveragePrice($product);
 
         return redirect()
             ->route('products.index')
@@ -140,8 +145,10 @@ class ProductController extends Controller
             'brand' => ['nullable', 'string', 'max:255'],
             'unit' => ['nullable', 'string', 'max:50'],
             'package_size' => ['nullable', 'string', 'max:255'],
-            'average_price' => ['nullable', 'numeric', 'min:0'],
             'description' => ['nullable', 'string'],
+            'inventories' => ['array'],
+            'inventories.*.supermarket_id' => ['required_with:inventories.*.price', 'exists:supermarkets,id'],
+            'inventories.*.price' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $product->fill($data);
@@ -151,6 +158,9 @@ class ProductController extends Controller
         }
 
         $product->save();
+
+        $this->syncInventoryData($product, $data['inventories'] ?? []);
+        $this->refreshAveragePrice($product);
 
         if ($request->expectsJson()) {
             $product->refresh();
@@ -189,6 +199,7 @@ class ProductController extends Controller
             'sections' => ['array'],
             'sections.*.supermarket_id' => ['required', 'exists:supermarkets,id'],
             'sections.*.section_id' => ['nullable', 'exists:supermarket_sections,id'],
+            'sections.*.price' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $sections = collect($data['sections'] ?? [])
@@ -203,24 +214,72 @@ class ProductController extends Controller
             foreach ($sections as $entry) {
                 $supermarketId = $entry['supermarket_id'];
                 $sectionId = $entry['section_id'];
+                $price = Arr::get($entry, 'price');
                 $inventoryItem = $inventoryItems->get($supermarketId);
 
+                $payload = [
+                    'supermarket_section_id' => $sectionId,
+                    'price' => $price !== null ? (float) $price : null,
+                ];
+
                 if ($inventoryItem) {
-                    $inventoryItem->update([
-                        'supermarket_section_id' => $sectionId,
-                    ]);
+                    $inventoryItem->update($payload);
                 } else {
-                    InventoryItem::create([
+                    InventoryItem::create(array_merge([
                         'product_id' => $product->id,
                         'supermarket_id' => $supermarketId,
-                        'supermarket_section_id' => $sectionId,
-                    ]);
+                    ], $payload));
                 }
             }
+
+            $this->refreshAveragePrice($product);
         });
 
         return redirect()
             ->route('products.index', ['search' => $request->input('search')])
             ->with('status', 'Pasillos actualizados.');
+    }
+
+    private function syncInventoryData(Product $product, array $inventories): void
+    {
+        if ($inventories === []) {
+            return;
+        }
+
+        $existing = $product->inventoryItems()->get()->keyBy('supermarket_id');
+
+        foreach ($inventories as $entry) {
+            $supermarketId = isset($entry['supermarket_id']) ? (int) $entry['supermarket_id'] : null;
+
+            if (! $supermarketId) {
+                continue;
+            }
+
+            $price = Arr::get($entry, 'price');
+
+            $payload = [
+                'price' => $price !== null ? (float) $price : null,
+            ];
+
+            $record = $existing->get($supermarketId);
+
+            if ($record) {
+                $record->update($payload);
+            } else {
+                InventoryItem::create(array_merge([
+                    'product_id' => $product->id,
+                    'supermarket_id' => $supermarketId,
+                ], $payload));
+            }
+        }
+    }
+
+    private function refreshAveragePrice(Product $product): void
+    {
+        $average = $product->inventoryItems()
+            ->whereNotNull('price')
+            ->avg('price');
+
+        $product->update(['average_price' => $average]);
     }
 }
