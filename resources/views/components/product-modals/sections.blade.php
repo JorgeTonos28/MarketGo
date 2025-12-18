@@ -1,4 +1,4 @@
-@props(['product', 'supermarkets', 'filterLetter' => null])
+@props(['product', 'supermarkets', 'searchTerm' => null])
 
 <div data-modal="sections-product-{{ $product->id }}" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-slate-900/60 p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl shadow-xl max-w-3xl w-full overflow-hidden">
@@ -13,7 +13,7 @@
         <form method="POST" action="{{ route('products.sections.update', $product) }}" class="px-6 py-6 space-y-5">
             @csrf
             @method('PUT')
-            <input type="hidden" name="letter" value="{{ $filterLetter }}">
+            <input type="hidden" name="search" value="{{ $searchTerm }}">
 
             <div class="space-y-4">
                 @foreach($supermarkets as $supermarket)

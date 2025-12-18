@@ -18,14 +18,14 @@ class ProductController extends Controller
 {
     public function index(Request $request): View
     {
-        $letter = $request->string('letter')->toString();
+        $search = $request->string('search')->toString();
 
         $productsQuery = Product::query()
             ->with(['category', 'inventoryItems.supermarket', 'inventoryItems.section'])
             ->orderBy('name');
 
-        if ($letter) {
-            $productsQuery->where('name', 'like', $letter . '%');
+        if ($search !== '') {
+            $productsQuery->where('name', 'like', '%' . $search . '%');
         }
 
         $products = $productsQuery->get();
@@ -88,7 +88,7 @@ class ProductController extends Controller
             'products' => $products,
             'categories' => $categories,
             'supermarkets' => $supermarkets,
-            'filterLetter' => $letter,
+            'searchTerm' => $search,
             'productDataset' => $productDataset,
             'sectionDataset' => $sectionDataset,
             'activeLists' => $activeLists,
@@ -170,7 +170,7 @@ class ProductController extends Controller
         }
 
         return redirect()
-            ->route('products.index', ['letter' => $request->input('letter')])
+            ->route('products.index', ['search' => $request->input('search')])
             ->with('status', 'Producto actualizado.');
     }
 
@@ -179,7 +179,7 @@ class ProductController extends Controller
         $product->delete();
 
         return redirect()
-            ->route('products.index', ['letter' => $request->input('letter')])
+            ->route('products.index', ['search' => $request->input('search')])
             ->with('status', 'Producto eliminado.');
     }
 
@@ -220,7 +220,7 @@ class ProductController extends Controller
         });
 
         return redirect()
-            ->route('products.index', ['letter' => $request->input('letter')])
+            ->route('products.index', ['search' => $request->input('search')])
             ->with('status', 'Pasillos actualizados.');
     }
 }

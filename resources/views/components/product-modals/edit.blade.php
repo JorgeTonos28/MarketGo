@@ -1,4 +1,4 @@
-@props(['product', 'categories', 'filterLetter' => null])
+@props(['product', 'categories', 'searchTerm' => null])
 
 <div data-modal="edit-product-{{ $product->id }}" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-slate-900/60 p-4">
     <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full overflow-hidden">
@@ -13,7 +13,7 @@
         <form method="POST" action="{{ route('products.update', $product) }}" class="px-6 py-6 space-y-5">
             @csrf
             @method('PUT')
-            <input type="hidden" name="letter" value="{{ $filterLetter }}">
+            <input type="hidden" name="search" value="{{ $searchTerm }}">
             <div class="grid gap-4 md:grid-cols-2">
                 <div class="md:col-span-2">
                     <label class="block text-xs font-semibold text-slate-500 mb-1" for="edit-name-{{ $product->id }}">Nombre</label>

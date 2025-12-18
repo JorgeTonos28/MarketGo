@@ -47,20 +47,9 @@
             <div class="border border-slate-200 rounded-xl p-5" data-existing-block>
                 <h3 class="text-sm font-semibold text-slate-700 mb-3">Catálogo existente</h3>
                 <div class="space-y-4">
-                    <div class="grid gap-3 sm:grid-cols-2">
-                        <div>
-                            <label class="block text-xs font-medium text-slate-500 mb-1">Filtrar por inicial</label>
-                            <select data-existing-letter class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                <option value="">Todas</option>
-                                @foreach(range('A', 'Z') as $letterOption)
-                                    <option value="{{ $letterOption }}">{{ $letterOption }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-500 mb-1">Buscar producto</label>
-                            <input type="text" data-existing-filter placeholder="Escribe para filtrar" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Buscar y filtrar</label>
+                        <input type="text" data-existing-filter placeholder="Escribe para filtrar productos por nombre" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-500 mb-1">Selecciona producto</label>
@@ -175,20 +164,9 @@
                     <button type="button" data-close-modal class="text-slate-400 hover:text-slate-600">✕</button>
                 </div>
                 <div class="px-6 py-6 space-y-4" data-existing-block>
-                    <div class="grid gap-3 sm:grid-cols-2">
-                        <div>
-                            <label class="block text-xs font-medium text-slate-500 mb-1">Filtrar por inicial</label>
-                            <select data-existing-letter class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                <option value="">Todas</option>
-                                @foreach(range('A', 'Z') as $letterOption)
-                                    <option value="{{ $letterOption }}">{{ $letterOption }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-500 mb-1">Buscar producto</label>
-                            <input type="text" data-existing-filter placeholder="Escribe para filtrar" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Buscar y filtrar</label>
+                        <input type="text" data-existing-filter placeholder="Escribe para filtrar productos por nombre" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-500 mb-1">Selecciona producto</label>

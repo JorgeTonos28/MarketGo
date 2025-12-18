@@ -507,7 +507,6 @@ class ListBuilder {
             quantity: container.querySelector('[data-existing-quantity]'),
             notes: container.querySelector('[data-existing-notes]'),
             filter: container.querySelector('[data-existing-filter]'),
-            letter: container.querySelector('[data-existing-letter]'),
         }));
     }
 
@@ -592,17 +591,6 @@ class ListBuilder {
         this.existingForms.forEach((form) => {
             form.select?.addEventListener('change', () => this.handleExistingSelection(form));
             form.filter?.addEventListener('input', () => this.filterExistingOptions(form));
-            form.letter?.addEventListener('change', () => {
-                this.applyExistingFilters(form);
-
-                if (form.select && form.select.value) {
-                    const selectedOption = form.select.selectedOptions[0];
-
-                    if (selectedOption?.hidden) {
-                        form.select.value = '';
-                    }
-                }
-            });
 
             this.applyExistingFilters(form);
         });
@@ -679,7 +667,6 @@ class ListBuilder {
         }
 
         const query = form.filter?.value?.trim().toLowerCase() ?? '';
-        const letter = form.letter?.value?.trim().toLowerCase() ?? '';
 
         Array.from(select.options).forEach((option, index) => {
             if (index === 0) {
@@ -689,8 +676,7 @@ class ListBuilder {
 
             const text = option.textContent?.toLowerCase() ?? '';
             const matchesQuery = query === '' || text.includes(query);
-            const matchesLetter = letter === '' || text.startsWith(letter);
-            option.hidden = ! (matchesQuery && matchesLetter);
+            option.hidden = ! matchesQuery;
         });
     }
 

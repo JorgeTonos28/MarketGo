@@ -177,7 +177,7 @@ class ShoppingListController extends Controller
 
     public function update(Request $request, ShoppingList $shoppingList): RedirectResponse
     {
-        if ($shoppingList->user_id !== $request->user()->id) {
+        if ((int) $shoppingList->user_id !== (int) $request->user()->id) {
             abort(403);
         }
 
@@ -192,7 +192,7 @@ class ShoppingListController extends Controller
 
     public function addItems(Request $request, ShoppingList $shoppingList): RedirectResponse
     {
-        if ($shoppingList->user_id !== $request->user()->id) {
+        if ((int) $shoppingList->user_id !== (int) $request->user()->id) {
             abort(403);
         }
 
@@ -257,7 +257,7 @@ class ShoppingListController extends Controller
 
     public function show(Request $request, ShoppingList $shoppingList): View
     {
-        if ($shoppingList->user_id !== $request->user()->id) {
+        if ((int) $shoppingList->user_id !== (int) $request->user()->id) {
             abort(403);
         }
 
