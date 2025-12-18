@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ShoppingListController;
 use App\Http\Controllers\ShoppingListItemStatusController;
 use App\Http\Controllers\SupermarketController;
@@ -25,8 +26,14 @@ Route::middleware('auth')->group(function (): void {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
 
     Route::resource('shopping-lists', ShoppingListController::class)->only(['index', 'create', 'store', 'show']);
+    Route::patch('shopping-lists/{shopping_list}', [ShoppingListController::class, 'update'])
+        ->name('shopping-lists.update');
     Route::post('shopping-lists/{shopping_list}/items', [ShoppingListController::class, 'addItems'])
         ->name('shopping-lists.items.store');
+
+    Route::resource('products', ProductController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::put('products/{product}/sections', [ProductController::class, 'updateSections'])
+        ->name('products.sections.update');
 
     Route::patch('shopping-lists/{shopping_list}/items/{shopping_list_item}/status', ShoppingListItemStatusController::class)
         ->name('shopping-lists.items.status');

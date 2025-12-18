@@ -11,6 +11,20 @@
         <section class="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
             <h2 class="text-lg font-semibold text-slate-800 mb-4">Detalles de la lista</h2>
             <div class="grid gap-5 md:grid-cols-2">
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Estado de la lista</label>
+                    <div class="flex flex-wrap items-center gap-4 text-sm text-slate-600">
+                        <label class="flex items-center gap-2">
+                            <input type="radio" name="status" value="active" class="text-indigo-600" @checked(old('status', 'active') === 'active')>
+                            Activa
+                        </label>
+                        <label class="flex items-center gap-2">
+                            <input type="radio" name="status" value="draft" class="text-indigo-600" @checked(old('status') === 'draft')>
+                            Inactiva
+                        </label>
+                        <p class="text-xs text-slate-500">Puedes activar o pausar la lista en cualquier momento.</p>
+                    </div>
+                </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-600 mb-1" for="name">Nombre</label>
                     <input type="text" id="name" name="name" value="{{ old('name') }}" required class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Compra semanal">
@@ -46,6 +60,8 @@
             'productDataset' => $productDataset,
             'supermarketDataset' => $supermarketDataset,
             'sectionDataset' => $sectionDataset,
+            'displayMode' => 'inline',
+            'defaultSupermarketId' => old('supermarket_id'),
         ])
 
         <div class="flex justify-end">

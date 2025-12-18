@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'MarketGo')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -18,6 +19,7 @@
                     <a href="{{ route('dashboard') }}" class="hover:text-indigo-600 {{ request()->routeIs('dashboard') ? 'text-indigo-600' : '' }}">Dashboard</a>
                     <a href="{{ route('shopping-lists.index') }}" class="hover:text-indigo-600 {{ request()->routeIs('shopping-lists.index') || request()->routeIs('shopping-lists.show') ? 'text-indigo-600' : '' }}">Listas de compra</a>
                     <a href="{{ route('shopping-lists.create') }}" class="hover:text-indigo-600 {{ request()->routeIs('shopping-lists.create') ? 'text-indigo-600' : '' }}">Crear lista</a>
+                    <a href="{{ route('products.index') }}" class="hover:text-indigo-600 {{ request()->routeIs('products.*') ? 'text-indigo-600' : '' }}">Productos</a>
                     <a href="{{ route('supermarkets.index') }}" class="hover:text-indigo-600 {{ request()->routeIs('supermarkets.*') ? 'text-indigo-600' : '' }}">Establecimientos</a>
                     @auth
                         @if(auth()->user()->is_admin)
@@ -61,5 +63,7 @@
             </div>
         </footer>
     </div>
+
+    @stack('modals')
 </body>
 </html>

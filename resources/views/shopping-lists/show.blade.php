@@ -15,6 +15,19 @@
         <div>
             <h1 class="text-2xl font-bold text-slate-800">{{ $shoppingList->name }}</h1>
             <p class="text-sm text-slate-500">{{ optional($shoppingList->supermarket)->name ?? 'Sin establecimiento principal' }}</p>
+            <div class="mt-3 flex items-center gap-3">
+                <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full {{ $shoppingList->status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600' }}">
+                    {{ $shoppingList->status === 'active' ? 'Lista activa' : 'Lista inactiva' }}
+                </span>
+                <form method="POST" action="{{ route('shopping-lists.update', $shoppingList) }}" class="inline-flex items-center gap-2">
+                    @csrf
+                    @method('PATCH')
+                    <input type="hidden" name="status" value="{{ $shoppingList->status === 'active' ? 'draft' : 'active' }}">
+                    <button type="submit" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100">
+                        {{ $shoppingList->status === 'active' ? 'Desactivar lista' : 'Activar lista' }}
+                    </button>
+                </form>
+            </div>
         </div>
         <a href="{{ route('shopping-lists.index') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200">← Volver a todas las listas</a>
     </div>
@@ -64,6 +77,8 @@
                 'productDataset' => $productDataset,
                 'supermarketDataset' => $supermarketDataset,
                 'sectionDataset' => $sectionDataset,
+                'displayMode' => 'modal',
+                'defaultSupermarketId' => $shoppingList->supermarket_id,
             ])
 
             <div class="flex justify-end">
