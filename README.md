@@ -1,58 +1,89 @@
-# MarketGo MVP
+# MarketGo
 
-MarketGo es una plataforma Laravel para planificar compras inteligentes en supermercados y otros establecimientos. Este MVP incluye un panel de usuario completo, datos de demostración y un área administrativa reservada para cuentas con rol de administrador.
+MarketGo is a shopping list management application built with Laravel and Ionic.
 
-## Funcionalidades principales
+## Architecture
 
-- **Autenticación básica** con usuarios demo ya configurados (`admin@marketgo.test` y `demo@marketgo.test`, contraseña `password`).
-- **Dashboard personal** con métricas de listas activas, presupuesto estimado, consumo reciente y gastos por establecimiento.
-- **Gestión de listas inteligentes**: crea listas, selecciona productos del catálogo o agrégalos manualmente, asigna supermercados por ítem, define pasillos y calcula el orden automáticamente.
-- **Interacción en la lista**: marca productos como agregados al carrito y revisa un resumen con pendientes vs. items en el carrito.
-- **Módulo de establecimientos** para registrar supermercados, ferreterías u otras tiendas con sus pasillos.
-- **Panel administrativo** (solo administradores) con la visión general creada previamente.
+- **Backend:** Laravel 11 (Monolith + API)
+- **Frontend (Web):** Blade + Tailwind CSS
+- **Frontend (Mobile):** Ionic + Vue 3 (located in `mobile-app/`)
 
-## Requisitos
+## Getting Started
 
-- PHP 8.2+
-- Composer
-- Node.js 18+
-- Base de datos compatible con Laravel (SQLite, MySQL, PostgreSQL, etc.)
+### Backend Setup
 
-## Instalación
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd marketgo
+   ```
 
-```bash
-composer install
-cp .env.example .env
-php artisan key:generate
-npm install
-npm run build # o npm run dev para entorno local
-```
+2. **Install dependencies:**
+   ```bash
+   composer install
+   npm install
+   ```
 
-Configura la conexión a la base de datos en `.env` y luego ejecuta las migraciones con datos de demo:
+3. **Configure environment:**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
 
-```bash
-php artisan migrate --seed
-```
+4. **Setup Database:**
+   - Configure your database in `.env`.
+   - Run migrations:
+     ```bash
+     php artisan migrate
+     ```
 
-## Usuarios de demostración
+5. **Serve the application:**
+   ```bash
+   php artisan serve
+   ```
+   The API will be available at `http://localhost:8000/api`.
 
-| Rol | Correo | Contraseña |
-| --- | --- | --- |
-| Administrador | `admin@marketgo.test` | `password` |
-| Usuario | `demo@marketgo.test` | `password` |
+### Mobile App Setup
 
-## Ejecución
+1. **Navigate to the mobile app directory:**
+   ```bash
+   cd mobile-app
+   ```
 
-Arranca el servidor de desarrollo:
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-```bash
-php artisan serve
-```
+3. **Configure environment:**
+   - Copy the example environment file:
+     ```bash
+     cp .env.example .env
+     ```
+   - Edit `.env` and set `VITE_API_URL` to your backend URL.
+     - **For Android Emulator:** Use `http://10.0.2.2:8000/api`
+     - **For iOS Simulator:** Use `http://localhost:8000/api`
+     - **For Physical Device:** Use your computer's local IP (e.g., `http://192.168.1.X:8000/api`). Ensure your backend is running with `php artisan serve --host 0.0.0.0`.
 
-Visita `http://localhost:8000` para acceder al login. Tras iniciar sesión podrás navegar por el dashboard, gestionar listas y crear establecimientos. Si ingresas con la cuenta de administrador tendrás acceso adicional al panel `/admin`.
+4. **Run the app:**
+   ```bash
+   ionic serve
+   ```
+   This will start the development server and open the app in your browser.
 
-## Tests
+## Testing
 
-```bash
-php artisan test
-```
+- **Backend Tests:**
+  ```bash
+  php artisan test
+  ```
+
+## Mobile App Details
+
+The mobile app is built with Ionic and Vue 3. It uses `vite` for building and bundling.
+The configuration for Ionic is in `ionic.config.json` (configured as `vue-vite`).
+
+### Key Directories
+- `src/views`: Application pages (Login, Lists, Products).
+- `src/services`: API service configuration.
+- `src/router`: Navigation routing.

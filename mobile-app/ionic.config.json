@@ -1,0 +1,7 @@
+{
+  "name": "marketgo-mobile",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "vue-vite"
+}
