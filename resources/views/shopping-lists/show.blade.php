@@ -27,6 +27,11 @@
                         {{ $shoppingList->status === 'active' ? 'Desactivar lista' : 'Activar lista' }}
                     </button>
                 </form>
+                <form method="POST" action="{{ route('shopping-lists.destroy', $shoppingList) }}" class="inline-flex items-center gap-2" onsubmit="return confirm('¿Eliminar esta lista de forma permanente?');">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-rose-300 text-rose-700 hover:bg-rose-50">Eliminar lista</button>
+                </form>
             </div>
         </div>
         <a href="{{ route('shopping-lists.index') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200">← Volver a todas las listas</a>

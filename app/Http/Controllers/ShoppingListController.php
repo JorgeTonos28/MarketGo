@@ -61,6 +61,7 @@ class ShoppingListController extends Controller
                         'section_id' => $item->supermarket_section_id,
                         'section_name' => optional($item->section)->name,
                         'section_position' => optional($item->section)->position,
+                        'price' => $item->price,
                     ];
                 })->values(),
             ];
@@ -361,6 +362,7 @@ class ShoppingListController extends Controller
                         'section_id' => $item->supermarket_section_id,
                         'section_name' => optional($item->section)->name,
                         'section_position' => optional($item->section)->position,
+                        'price' => $item->price,
                     ];
                 })->values(),
             ];
@@ -395,6 +397,19 @@ class ShoppingListController extends Controller
             'supermarketDataset' => $supermarketDataset,
             'sectionDataset' => $sectionDataset,
         ]);
+    }
+
+    public function destroy(Request $request, ShoppingList $shoppingList): RedirectResponse
+    {
+        if ((int) $shoppingList->user_id !== (int) $request->user()->id) {
+            abort(403);
+        }
+
+        $shoppingList->delete();
+
+        return redirect()
+            ->route('shopping-lists.index')
+            ->with('status', 'Lista eliminada correctamente.');
     }
 
     private function refreshListOrderingAndTotals(ShoppingList $shoppingList): void

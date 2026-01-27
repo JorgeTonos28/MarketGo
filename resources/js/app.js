@@ -503,10 +503,12 @@ class ListBuilder {
     collectExistingForms() {
         return Array.from(this.root.querySelectorAll('[data-existing-block]')).map((container) => ({
             container,
-            select: container.querySelector('[data-existing-product]'),
+            input: container.querySelector('[data-existing-input]'),
+            productId: container.querySelector('[data-existing-product]'),
+            options: container.querySelector('[data-existing-options]'),
             quantity: container.querySelector('[data-existing-quantity]'),
             notes: container.querySelector('[data-existing-notes]'),
-            filter: container.querySelector('[data-existing-filter]'),
+            supermarket: container.querySelector('[data-existing-supermarket]'),
         }));
     }
 
@@ -589,10 +591,36 @@ class ListBuilder {
         });
 
         this.existingForms.forEach((form) => {
-            form.select?.addEventListener('change', () => this.handleExistingSelection(form));
-            form.filter?.addEventListener('input', () => this.filterExistingOptions(form));
+            form.input?.addEventListener('focus', () => this.showExistingOptions(form));
+            form.input?.addEventListener('input', () => this.renderExistingOptions(form));
+            form.input?.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    this.selectFirstExistingOption(form);
+                }
+            });
 
-            this.applyExistingFilters(form);
+            form.options?.addEventListener('mousedown', (event) => {
+                const target = event.target;
+
+                if (! (target instanceof HTMLElement)) {
+                    return;
+                }
+
+                const productId = this.parseNullableInt(target.dataset.productId);
+
+                if (! productId) {
+                    return;
+                }
+
+                const product = this.productById.get(productId);
+
+                if (product) {
+                    this.handleExistingSelection(form, product);
+                }
+            });
+
+            this.renderExistingOptions(form);
         });
 
         this.manualForms.forEach((form) => {
@@ -635,10 +663,9 @@ class ListBuilder {
 
         const form = this.existingForms[0];
 
-        if (form?.filter) {
-            form.filter.focus();
-        } else if (form?.select) {
-            form.select.focus();
+        if (form?.input) {
+            form.input.focus();
+            this.showExistingOptions(form);
         }
     }
 
@@ -655,48 +682,78 @@ class ListBuilder {
         }
     }
 
-    filterExistingOptions(form) {
-        this.applyExistingFilters(form);
+    showExistingOptions(form) {
+        this.renderExistingOptions(form);
+        form.options?.classList.remove('hidden');
     }
 
-    applyExistingFilters(form) {
-        const select = form.select;
+    renderExistingOptions(form) {
+        const optionsContainer = form.options;
 
-        if (! select) {
+        if (! optionsContainer) {
             return;
         }
 
-        const query = form.filter?.value?.trim().toLowerCase() ?? '';
+        const query = form.input?.value?.trim().toLowerCase() ?? '';
+        const matches = this.products
+            .filter((product) => {
+                const name = product.name?.toLowerCase() ?? '';
+                const brand = product.brand?.toLowerCase() ?? '';
 
-        Array.from(select.options).forEach((option, index) => {
-            if (index === 0) {
-                option.hidden = false;
-                return;
-            }
+                return query === '' || name.includes(query) || brand.includes(query);
+            })
+            .slice(0, 30);
 
-            const text = option.textContent?.toLowerCase() ?? '';
-            const matchesQuery = query === '' || text.includes(query);
-            option.hidden = ! matchesQuery;
+        optionsContainer.innerHTML = '';
+
+        if (matches.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'px-3 py-2 text-xs text-slate-500';
+            empty.textContent = 'Sin coincidencias';
+            optionsContainer.appendChild(empty);
+            optionsContainer.classList.remove('hidden');
+            return;
+        }
+
+        matches.forEach((product) => {
+            const option = document.createElement('button');
+            option.type = 'button';
+            option.dataset.productId = product.id;
+            option.className = 'block w-full text-left px-3 py-2 hover:bg-indigo-50 text-sm';
+            option.innerHTML = `
+                <span class="font-semibold text-slate-800">${this.escapeHtml(product.name)}</span>
+                ${product.brand ? `<span class="text-xs text-slate-500"> · ${this.escapeHtml(product.brand)}</span>` : ''}
+            `;
+            optionsContainer.appendChild(option);
         });
+
+        optionsContainer.classList.remove('hidden');
     }
 
-    handleExistingSelection(form) {
-        if (! form.select) {
+    selectFirstExistingOption(form) {
+        const first = form.options?.querySelector('[data-product-id]');
+
+        if (! (first instanceof HTMLElement)) {
             return;
         }
 
-        const productId = this.parseNullableInt(form.select.value);
+        const productId = this.parseNullableInt(first.dataset.productId);
         const product = productId ? this.productById.get(productId) : null;
 
+        if (product) {
+            this.handleExistingSelection(form, product);
+        }
+    }
+
+    handleExistingSelection(form, product) {
         if (! product) {
             return;
         }
 
         const quantity = form.quantity ? Number.parseFloat(form.quantity.value || '1') || 1 : 1;
         const notes = form.notes?.value?.trim() || null;
-
-        const supermarketId = this.resolveDefaultSupermarketId(product);
-        const inventoryEntry = this.resolveInventoryEntry(product, supermarketId);
+        const chosenSupermarketId = this.parseNullableInt(form.supermarket?.value) ?? this.resolveDefaultSupermarketId(product);
+        const inventoryEntry = this.resolveInventoryEntry(product, chosenSupermarketId);
 
         const item = {
             type: 'existing',
@@ -710,20 +767,24 @@ class ListBuilder {
             package_size: product.package_size ?? null,
             quantity,
             quantity_unit: product.unit ?? '',
-            estimated_price: this.parsePrice(product.average_price) ?? null,
-            supermarket_id: supermarketId,
-            supermarket_name: this.resolveSupermarketName(supermarketId),
+            estimated_price: this.parsePrice(inventoryEntry?.price) ?? this.parsePrice(product.average_price) ?? null,
+            supermarket_id: chosenSupermarketId,
+            supermarket_name: this.resolveSupermarketName(chosenSupermarketId),
             section_id: inventoryEntry?.section_id ?? null,
             section_name: inventoryEntry?.section_name ?? null,
             section_number: inventoryEntry?.section_position ?? null,
             notes,
         };
 
+        if (form.productId) {
+            form.productId.value = String(product.id);
+        }
+
         this.items.push(item);
         this.render();
 
-        if (form.select) {
-            form.select.value = '';
+        if (form.input) {
+            form.input.value = '';
         }
 
         if (form.notes) {
@@ -732,6 +793,10 @@ class ListBuilder {
 
         if (form.quantity) {
             form.quantity.value = '1';
+        }
+
+        if (form.options) {
+            form.options.classList.add('hidden');
         }
     }
 

@@ -43,6 +43,18 @@
                                 </select>
                             </div>
                             <div>
+                                <label class="block text-xs font-semibold text-slate-500 mb-1" for="section-price-{{ $product->id }}-{{ $supermarket->id }}">Precio</label>
+                                <input
+                                    id="section-price-{{ $product->id }}-{{ $supermarket->id }}"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    name="sections[{{ $loop->index }}][price]"
+                                    value="{{ old("sections.$loop->index.price", optional($inventory)->price) }}"
+                                    class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                >
+                            </div>
+                            <div>
                                 <label class="block text-xs font-semibold text-slate-500 mb-1">Descripción actual</label>
                                 <div class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 bg-slate-50">
                                     {{ $currentSection ? 'Pasillo ' . $currentSection->position . ' · ' . $currentSection->name : 'Sin registro' }}

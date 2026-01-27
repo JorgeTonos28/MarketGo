@@ -110,7 +110,7 @@
                     </footer>
                 </article>
 
-                <x-product-modals.edit :product="$product" :categories="$categories" :search-term="$searchTerm" />
+                <x-product-modals.edit :product="$product" :categories="$categories" :supermarkets="$supermarkets" :search-term="$searchTerm" />
                 <x-product-modals.sections :product="$product" :supermarkets="$supermarkets" :search-term="$searchTerm" />
             @empty
                 <div class="md:col-span-2 xl:col-span-3 bg-white border border-dashed border-slate-300 rounded-xl p-10 text-center">
@@ -119,7 +119,7 @@
             @endforelse
         </div>
 
-        <x-product-modals.create :categories="$categories" />
+        <x-product-modals.create :categories="$categories" :supermarkets="$supermarkets" />
         <x-product-modals.add-to-list :active-lists="$activeLists" :has-active-lists="$hasActiveLists" />
     </div>
 @endsection

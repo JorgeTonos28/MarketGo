@@ -48,15 +48,19 @@
                 <h3 class="text-sm font-semibold text-slate-700 mb-3">Catálogo existente</h3>
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-xs font-medium text-slate-500 mb-1">Buscar y filtrar</label>
-                        <input type="text" data-existing-filter placeholder="Escribe para filtrar productos por nombre" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Buscar y seleccionar producto</label>
+                        <div class="relative" data-existing-combobox>
+                            <input type="text" data-existing-input placeholder="Escribe para buscar" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" autocomplete="off">
+                            <input type="hidden" data-existing-product>
+                            <div data-existing-options class="hidden absolute z-10 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow max-h-60 overflow-y-auto"></div>
+                        </div>
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-slate-500 mb-1">Selecciona producto</label>
-                        <select data-existing-product class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <option value="">-- Selecciona --</option>
-                            @foreach($products as $product)
-                                <option value="{{ $product->id }}">{{ $product->name }} @if($product->brand)· {{ $product->brand }}@endif</option>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Establecimiento</label>
+                        <select data-existing-supermarket class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">Igual al de la lista</option>
+                            @foreach($supermarkets as $market)
+                                <option value="{{ $market->id }}">{{ $market->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -154,32 +158,36 @@
     </div>
 
     @if($isModalMode)
-        <div data-modal="builder-existing" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-slate-900/60 p-4">
-            <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full overflow-hidden">
-                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-                    <div>
-                        <h3 class="text-lg font-semibold text-slate-800">Agregar desde catálogo</h3>
-                        <p class="text-xs text-slate-500">Selecciona un producto y se añadirá a la cola.</p>
-                    </div>
-                    <button type="button" data-close-modal class="text-slate-400 hover:text-slate-600">✕</button>
-                </div>
-                <div class="px-6 py-6 space-y-4" data-existing-block>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-500 mb-1">Buscar y filtrar</label>
-                        <input type="text" data-existing-filter placeholder="Escribe para filtrar productos por nombre" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-500 mb-1">Selecciona producto</label>
-                        <select data-existing-product class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <option value="">-- Selecciona --</option>
-                            @foreach($products as $product)
-                                <option value="{{ $product->id }}">{{ $product->name }} @if($product->brand)· {{ $product->brand }}@endif</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="grid gap-4 sm:grid-cols-2">
+            <div data-modal="builder-existing" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-slate-900/60 p-4">
+                <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full overflow-hidden">
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
                         <div>
-                            <label class="block text-xs font-medium text-slate-500 mb-1">Cantidad</label>
+                            <h3 class="text-lg font-semibold text-slate-800">Agregar desde catálogo</h3>
+                            <p class="text-xs text-slate-500">Selecciona un producto y se añadirá a la cola.</p>
+                        </div>
+                        <button type="button" data-close-modal class="text-slate-400 hover:text-slate-600">✕</button>
+                    </div>
+                    <div class="px-6 py-6 space-y-4" data-existing-block>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Buscar y seleccionar producto</label>
+                            <div class="relative" data-existing-combobox>
+                                <input type="text" data-existing-input placeholder="Escribe para buscar" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" autocomplete="off">
+                                <input type="hidden" data-existing-product>
+                                <div data-existing-options class="hidden absolute z-10 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Establecimiento</label>
+                            <select data-existing-supermarket class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="">Igual al de la lista</option>
+                                @foreach($supermarkets as $market)
+                                    <option value="{{ $market->id }}">{{ $market->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">Cantidad</label>
                             <input type="number" step="0.01" min="0.01" value="1" data-existing-quantity class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         </div>
                         <div>
