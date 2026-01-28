@@ -8,15 +8,26 @@
         <ion-searchbar v-model="searchQuery" @ionInput="searchProducts" debounce="500"></ion-searchbar>
       </ion-toolbar>
     </ion-header>
-    <ion-content>
-      <ion-list>
-        <ion-item v-for="product in products" :key="product.id">
-          <ion-label>
-            <h2>{{ product.name }}</h2>
-            <p>{{ product.brand }} - {{ product.average_price ? '$' + product.average_price : 'N/A' }}</p>
-          </ion-label>
-        </ion-item>
-      </ion-list>
+    <ion-content class="bg-slate-100">
+      <div class="p-4 space-y-4">
+        <div
+          v-for="product in products"
+          :key="product.id"
+          class="bg-white border border-slate-200 rounded-xl shadow-sm p-4 flex items-center justify-between gap-4"
+        >
+          <div>
+            <p class="text-lg font-semibold text-slate-800">{{ product.name }}</p>
+            <p class="text-sm text-slate-500">{{ product.brand || 'Sin marca' }}</p>
+            <p class="text-sm text-slate-500">{{ formatPrice(product.average_price) }}</p>
+          </div>
+          <button
+            type="button"
+            class="inline-flex items-center px-3 py-1.5 text-sm font-semibold text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-50"
+          >
+            Agregar
+          </button>
+        </div>
+      </div>
 
       <ion-infinite-scroll @ionInfinite="loadMore">
         <ion-infinite-scroll-content></ion-infinite-scroll-content>
@@ -27,7 +38,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonList, IonItem, IonLabel, IonInfiniteScroll, IonInfiniteScrollContent } from '@ionic/vue';
+import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonInfiniteScroll, IonInfiniteScrollContent } from '@ionic/vue';
 import api from '../services/api';
 
 const products = ref<any[]>([]);
@@ -66,6 +77,14 @@ const loadMore = async (ev: any) => {
   page.value++;
   await fetchProducts();
   ev.target.complete();
+};
+
+const formatPrice = (price: number | null) => {
+  if (!price) {
+    return 'Precio no disponible';
+  }
+
+  return `$${price}`;
 };
 
 onMounted(() => {

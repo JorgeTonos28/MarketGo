@@ -8,23 +8,34 @@
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
-    <ion-content>
+    <ion-content class="bg-slate-100">
       <ion-refresher slot="fixed" @ionRefresh="doRefresh">
         <ion-refresher-content></ion-refresher-content>
       </ion-refresher>
 
-      <ion-list>
-        <ion-item v-for="list in lists" :key="list.id" :router-link="'/lists/' + list.id" button detail>
-          <ion-label>
-            <h2>{{ list.name }}</h2>
-            <p>{{ list.supermarket ? list.supermarket.name : 'Sin supermercado' }}</p>
-            <p>{{ list.items_count }} items</p>
-          </ion-label>
-          <ion-badge slot="end" :color="list.status === 'active' ? 'success' : 'medium'">{{ list.status }}</ion-badge>
-        </ion-item>
-      </ion-list>
+      <div class="p-4 space-y-4">
+        <router-link
+          v-for="list in lists"
+          :key="list.id"
+          :to="`/lists/${list.id}`"
+          class="block bg-white rounded-xl shadow-sm border border-slate-200 p-4"
+        >
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-lg font-semibold text-slate-800">{{ list.name }}</p>
+              <p class="text-sm text-slate-500">
+                {{ list.supermarket ? list.supermarket.name : 'Sin supermercado' }}
+              </p>
+              <p class="text-sm text-slate-500">{{ list.items_count }} items</p>
+            </div>
+            <span :class="statusClasses(list.status)">
+              {{ statusLabel(list.status) }}
+            </span>
+          </div>
+        </router-link>
+      </div>
 
-      <div v-if="lists.length === 0" class="ion-padding ion-text-center">
+      <div v-if="lists.length === 0" class="p-6 text-center text-sm text-slate-500">
         <p>No tienes listas de compra.</p>
       </div>
     </ion-content>
@@ -33,7 +44,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonLabel, IonBadge, IonRefresher, IonRefresherContent, IonButtons } from '@ionic/vue';
+import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonRefresher, IonRefresherContent, IonButtons } from '@ionic/vue';
 import api from '../services/api';
 
 const lists = ref<any[]>([]);
@@ -50,6 +61,16 @@ const fetchLists = async () => {
 const doRefresh = async (event: any) => {
   await fetchLists();
   event.target.complete();
+};
+
+const statusLabel = (status: string) => (status === 'active' ? 'Activa' : 'Completada');
+
+const statusClasses = (status: string) => {
+  if (status === 'active') {
+    return 'inline-flex items-center rounded-full bg-indigo-100 text-indigo-700 px-2.5 py-0.5 text-xs font-medium';
+  }
+
+  return 'inline-flex items-center rounded-full bg-slate-100 text-slate-600 px-2.5 py-0.5 text-xs font-medium';
 };
 
 onMounted(() => {
